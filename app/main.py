@@ -7,6 +7,7 @@ import os
 from .services.jd_analyzer import JDAnalyzer
 from .services.file_processor import FileProcessor
 from .models.jd import JobDescription, AnalysisResult
+import requests
 
 app = FastAPI(
     title="Job Description Analyser",
@@ -75,15 +76,30 @@ async def health_check():
             "DATABASE_URL": bool(os.getenv("DATABASE_URL")),
             "HUGGINGFACE_API_KEY": bool(os.getenv("HUGGINGFACE_API_KEY")),
             "JWT_SECRET": bool(os.getenv("JWT_SECRET")),
-            "PORT": os.getenv("PORT", "10000"),
+            "PORT": os.getenv("PORT", "8000"),
             "HOST": os.getenv("HOST", "0.0.0.0")
         }
+        
+        # Check if Hugging Face API is accessible
+        huggingface_status = "unknown"
+        if env_vars["HUGGINGFACE_API_KEY"]:
+            try:
+                response = requests.get(
+                    "https://api-inference.huggingface.co/status",
+                    headers={"Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"}
+                )
+                huggingface_status = "healthy" if response.status_code == 200 else "unhealthy"
+            except Exception as e:
+                huggingface_status = f"error: {str(e)}"
         
         return {
             "status": "healthy",
             "environment": {
                 "variables": env_vars,
                 "all_required_set": all(env_vars.values())
+            },
+            "services": {
+                "huggingface_api": huggingface_status
             }
         }
     except Exception as e:
