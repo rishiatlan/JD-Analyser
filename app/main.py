@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 import uvicorn
+import os
 from .services.jd_analyzer import JDAnalyzer
 from .services.file_processor import FileProcessor
 from .models.jd import JobDescription, AnalysisResult
@@ -13,10 +14,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Get allowed origins from environment variable
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "https://intassist.vercel.app").split()
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,9 +67,30 @@ async def enhance_jd(jd: JobDescription):
 @app.get("/api/health")
 async def health_check():
     """
-    Health check endpoint
+    Health check endpoint with diagnostic information
     """
-    return {"status": "healthy"}
+    try:
+        # Check if required environment variables are set
+        env_vars = {
+            "DATABASE_URL": bool(os.getenv("DATABASE_URL")),
+            "HUGGINGFACE_API_KEY": bool(os.getenv("HUGGINGFACE_API_KEY")),
+            "JWT_SECRET": bool(os.getenv("JWT_SECRET")),
+            "PORT": os.getenv("PORT", "10000"),
+            "HOST": os.getenv("HOST", "0.0.0.0")
+        }
+        
+        return {
+            "status": "healthy",
+            "environment": {
+                "variables": env_vars,
+                "all_required_set": all(env_vars.values())
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
