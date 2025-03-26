@@ -6,11 +6,11 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://postgres:@Cursor2025@db.awlfgubnleuhudvnimxp.supabase.co:5432/postgres
       - key: HUGGINGFACE_API_KEY
-        sync: false
+        value: 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
       - key: JWT_SECRET
-        sync: false
+        value: jd_analyzer_secret_key_2024
       - key: JWT_ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
@@ -20,6 +20,6 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: DEBUG
-        value: false
+        value: False
       - key: ALLOWED_ORIGINS
-        sync: false 
+        value: https://intassist.vercel.app 
