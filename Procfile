@@ -1,1 +1,1 @@
-web: cd /opt/render/project/src && python -m gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --access-logfile - --error-logfile - --log-level info 
+web: export PYTHONPATH=/opt/render/project/src && cd /opt/render/project/src && python -m gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --access-logfile - --error-logfile - --log-level info 
