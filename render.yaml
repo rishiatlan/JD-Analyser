@@ -3,8 +3,12 @@ services:
     name: jd-analyzer-backend
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    buildCommand: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      export PYTHONPATH=$PYTHONPATH:$(pwd)
+      python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --reload
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -23,4 +27,6 @@ services:
       - key: DEBUG
         value: False
       - key: ALLOWED_ORIGINS
-        value: https://intassist.vercel.app 
+        value: https://intassist.vercel.app
+      - key: PYTHONUNBUFFERED
+        value: 1 
