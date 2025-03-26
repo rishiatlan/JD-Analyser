@@ -1,1 +1,1 @@
-web: export PYTHONPATH=/opt/render/project/src && cd /opt/render/project/src && python -m gunicorn --config /opt/render/project/src/gunicorn_config.py wsgi:application 
+web: cd /opt/render/project/src && uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 
