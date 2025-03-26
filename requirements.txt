@@ -8,8 +8,8 @@ psycopg2-binary==2.9.9
 python-dotenv==1.0.1
 pydantic==2.7.4
 pydantic-settings==2.1.0
-langchain-core==0.3.45
-langchain==0.3.21
+langchain-core==0.1.26
+langchain==0.1.0
 langchain-community==0.0.24
 langchain-openai==0.0.8
 tokenizers==0.19.1
