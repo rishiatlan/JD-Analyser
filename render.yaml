@@ -16,7 +16,7 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 30
       - key: PORT
-        value: 8000
+        value: 10000
       - key: HOST
         value: 0.0.0.0
       - key: DEBUG
