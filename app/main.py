@@ -1,6 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from typing import Optional, List
 import uvicorn
@@ -11,6 +12,8 @@ from .services.file_processor import FileProcessor
 from .models.jd import JobDescription, AnalysisResult
 import requests
 import time
+from datetime import datetime, timedelta
+from collections import defaultdict
 
 # Configure logging
 logging.basicConfig(
@@ -18,6 +21,40 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Rate limiting configuration
+RATE_LIMIT_REQUESTS = 100  # requests per minute
+RATE_LIMIT_WINDOW = 60  # seconds
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+# Rate limiting storage
+request_counts = defaultdict(list)
+
+def check_rate_limit(request: Request):
+    client_ip = request.client.host
+    current_time = datetime.now()
+    
+    # Clean old requests
+    request_counts[client_ip] = [
+        req_time for req_time in request_counts[client_ip]
+        if current_time - req_time < timedelta(seconds=RATE_LIMIT_WINDOW)
+    ]
+    
+    # Check rate limit
+    if len(request_counts[client_ip]) >= RATE_LIMIT_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later."
+        )
+    
+    request_counts[client_ip].append(current_time)
+
+def check_file_size(file: UploadFile):
+    if file.size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE/1024/1024}MB"
+        )
 
 app = FastAPI(
     title="Job Description Analyser",
@@ -43,6 +80,17 @@ jd_analyzer = JDAnalyzer()
 file_processor = FileProcessor()
 
 @app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Add security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    return response
+
+@app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
@@ -59,11 +107,12 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 @app.post("/api/analyze/text", response_model=AnalysisResult)
-async def analyze_text(jd: JobDescription):
+async def analyze_text(jd: JobDescription, request: Request):
     """
     Analyze a job description provided as text
     """
     try:
+        check_rate_limit(request)
         logger.info(f"Analyzing text for job: {jd.title or 'Untitled'}")
         result = await jd_analyzer.analyze_text(jd.content)
         return result
@@ -72,11 +121,13 @@ async def analyze_text(jd: JobDescription):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/analyze/file", response_model=AnalysisResult)
-async def analyze_file(file: UploadFile = File(...)):
+async def analyze_file(request: Request, file: UploadFile = File(...)):
     """
     Analyze a job description from an uploaded file
     """
     try:
+        check_rate_limit(request)
+        check_file_size(file)
         logger.info(f"Processing file: {file.filename}")
         content = await file_processor.process_file(file)
         result = await jd_analyzer.analyze_text(content)
@@ -86,11 +137,12 @@ async def analyze_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/enhance", response_model=JobDescription)
-async def enhance_jd(jd: JobDescription):
+async def enhance_jd(jd: JobDescription, request: Request):
     """
     Enhance a job description with suggestions and improvements
     """
     try:
+        check_rate_limit(request)
         logger.info(f"Enhancing job description: {jd.title or 'Untitled'}")
         enhanced_jd = await jd_analyzer.enhance_jd(jd)
         return enhanced_jd
@@ -99,11 +151,12 @@ async def enhance_jd(jd: JobDescription):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/health")
-async def health_check():
+async def health_check(request: Request):
     """
     Health check endpoint with diagnostic information
     """
     try:
+        check_rate_limit(request)
         # Check if required environment variables are set
         env_vars = {
             "DATABASE_URL": bool(os.getenv("DATABASE_URL")),
