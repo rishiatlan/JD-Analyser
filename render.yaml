@@ -6,11 +6,11 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        value: postgresql://postgres:@Cursor2025@db.awlfgubnleuhudvnimxp.supabase.co:5432/postgres
+        sync: false
       - key: HUGGINGFACE_API_KEY
-        value: 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
+        sync: false
       - key: JWT_SECRET
-        value: jd_analyzer_secret_key_2024
+        sync: false
       - key: JWT_ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
