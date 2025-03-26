@@ -12,7 +12,8 @@ langchain-core>=0.3.45
 langchain>=0.3.21
 langchain-community>=0.0.24
 langchain-openai>=0.0.8
-langchain-huggingface>=0.1.2
-transformers==4.37.2
+tokenizers>=0.19.1
+transformers>=4.37.2
 torch==2.2.0
-sentence-transformers>=2.6.0 
+sentence-transformers>=2.6.0
+langchain-huggingface>=0.1.2 
