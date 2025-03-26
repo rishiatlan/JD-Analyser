@@ -26,9 +26,13 @@ services:
         value: https://intassist.vercel.app
       - key: PYTHONUNBUFFERED
         value: 1
+      - key: PYTHONPATH
+        value: /opt/render/project/src
       - key: LOG_LEVEL
         value: INFO
       - key: MAX_WORKERS
         value: 1
       - key: TIMEOUT
-        value: 120 
+        value: 120
+      - key: PORT
+        value: 8000 
