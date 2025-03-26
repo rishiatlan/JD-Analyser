@@ -8,7 +8,7 @@ services:
       pip install -r requirements.txt
     startCommand: |
       export PYTHONPATH=$PYTHONPATH:$(pwd)
-      gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+      gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --access-logfile - --error-logfile - --log-level info
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -29,4 +29,10 @@ services:
       - key: PYTHONUNBUFFERED
         value: 1
       - key: PYTHONPATH
-        value: /opt/render/project/src 
+        value: /opt/render/project/src
+      - key: LOG_LEVEL
+        value: INFO
+      - key: MAX_WORKERS
+        value: 1
+      - key: TIMEOUT
+        value: 120 
